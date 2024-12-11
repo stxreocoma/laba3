@@ -1,0 +1,21 @@
+#include <iostream>
+using namespace std;
+
+int main() {
+    int x = 42;
+    long y;
+    unsigned int z = 100;
+    short counter = 0;
+
+    // Цикл for
+    for (int i = 0; i < 10; i++) {
+        cout << "i = " << i << endl;
+    }
+
+    // Нестандартная строка, чтобы проверить обработку ошибок
+    int ;                // Ошибка: пропущено имя
+    int invalid = ;      // Ошибка: отсутствует значение
+    int 123name = 10;    // Ошибка: недопустимое имя
+
+    return 0;
+}
