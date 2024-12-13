@@ -1,56 +1,84 @@
-﻿#include <iostream>
-#include <fstream>
-#include <string>
+#include <iostream>
 #include <regex>
+#include <string>
+#include <unordered_set>
+#include <fstream>
+#include <vector>
+
+bool isReservedWord(const std::string& word) {
+    static const std::unordered_set<std::string> reservedWords = {
+        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept",
+        "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
+        "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue",
+        "co_await", "co_return", "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast",
+        "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if",
+        "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr",
+        "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast", "requires",
+        "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch",
+        "synchronized", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid",
+        "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
+        "xor_eq"
+    };
+
+    return reservedWords.find(word) != reservedWords.end();
+}
 
 bool isValidIntegerDeclaration(const std::string& line) {
-    // Регулярное выражение для проверки только целочисленных типов
-    std::regex intDeclarationRegex(
-        R"(\b(signed|unsigned)?\s*(short|long\s+long|long|int|short\s+int|long\s+int)?\s+[_a-zA-Z][_a-zA-Z0-9]*\s*(=\s*[-+]?\d+)?\s*;)");
-    return std::regex_match(line, intDeclarationRegex);
+    std::regex intRegex(
+        R"(^\s*(int|short|long|long long)\s+([a-zA-Z_][a-zA-Z0-9_]*\s*(?:=\s*-?[0-9]+)?)\s*(,\s*[a-zA-Z_][a-zA-Z0-9_]*(?:\s*=\s*-?[0-9]+)*)*\s*;\s*$)"
+    );
+
+    std::smatch match;
+    if (std::regex_match(line, match, intRegex)) {
+        std::regex variableRegex(R"(([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*(-?[0-9]+))?)");
+        std::string variables = line.substr(match.position(2));
+
+        auto variablesBegin = std::sregex_iterator(variables.begin(), variables.end(), variableRegex);
+        auto variablesEnd = std::sregex_iterator();
+
+        for (std::sregex_iterator i = variablesBegin; i != variablesEnd; ++i) {
+            std::smatch varMatch = *i;
+            std::string varName = varMatch[1].str();
+            if (isReservedWord(varName)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
-bool isLineRelevant(const std::string& line) {
-    // Регулярное выражение для определения строк с целочисленными типами
-    std::regex intTypeRegex(
-        R"(\b(signed|unsigned|short|long|int)\b)");
-    return std::regex_search(line, intTypeRegex);
+std::string trimString(std::string line) {
+    std::string trimmedLine = "";
+    bool charFlag = false;
+    for (auto c : line) {
+        if ((c == ' ' || c == '\b' || c == '\n') && charFlag == false) {
+            continue;
+        }
+        charFlag = true;
+        trimmedLine += c;
+    }
+    return trimmedLine;
 }
 
-//int main() {
-  //  setlocale(LC_ALL, "Russian");
-    //std::string fileName = "code.txt";
-//    std::ifstream inputFile(fileName);
-//
-  //  if (!inputFile.is_open()) {
-    //    std::cerr << "Ошибка: не удалось открыть файл " << fileName << std::endl;
-      //  return 1;
-    //}
+std::vector<std::string> parseCode(const std::string& filename) {
+    std::ifstream in(filename);
+    std::vector<std::string> codeLines;
+    std::string line;
+    while (std::getline(in, line, ';')) {
+        line.erase(line.find_last_not_of(" \t\n") + 1);
+        codeLines.push_back(trimString(line) + ';');
+    }
+    return codeLines;
+}
 
-    //std::string line;
-    //int lineNumber = 0;
-    //bool hasErrors = false;
-
-    //while (std::getline(inputFile, line)) {
-   //     lineNumber++;
-        // Убираем пробелы в начале и конце строки
-     //   line.erase(0, line.find_first_not_of(" \t"));
-       // line.erase(line.find_last_not_of(" \t") + 1);
-
-        // Проверяем только строки, связанные с целочисленными типами
-       // if (isLineRelevant(line)) {
-         //   if (!isValidIntegerDeclaration(line)) {
-           //     hasErrors = true;
-             //   std::cout << "Ошибка в строке " << lineNumber << ": " << line << std::endl;
-            //}
-        //}
-    //}
-
-   // inputFile.close();
-
-   // if (!hasErrors) {
-     //   std::cout << "Все объявления целочисленных переменных корректны." << std::endl;
-    //}
-
-   // return 0;
-//}
+int main() {
+    std::vector<std::string> code = parseCode("str.txt");
+    for (const auto& line : code) {
+        if (!isValidIntegerDeclaration(line)) {
+            std::cout << "error: " << line << std::endl;
+        }
+    }
+}
