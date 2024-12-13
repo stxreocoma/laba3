@@ -1,12 +1,11 @@
 #include <iostream>
 #include <regex>
 #include <string>
-#include <unordered_set>
 #include <fstream>
 #include <vector>
 
 bool isReservedWord(const std::string& word) {
-    static const std::unordered_set<std::string> reservedWords = {
+    static const std::vector<std::string> reservedWords = {
         "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept",
         "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
         "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue",
@@ -20,7 +19,12 @@ bool isReservedWord(const std::string& word) {
         "xor_eq"
     };
 
-    return reservedWords.find(word) != reservedWords.end();
+    for (auto reservedWord : reservedWords) {
+        if (word == reservedWord) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool isValidIntegerDeclaration(const std::string& line) {
